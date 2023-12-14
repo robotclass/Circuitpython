@@ -1,3 +1,30 @@
+# SPDX-FileCopyrightText: 2023 Oleg Evsegneev for RobotClass
+#
+# SPDX-License-Identifier: MIT
+
+# RobotClass Joystick-Slider CircuitPython Driver
+"""
+`robotclass_slider`
+====================================================
+
+Драйвер скользящего джойстика (джойстик-слайдера) I2C от RobotClass
+
+Исходный код
+https://github.com/robotclass/Circuitpython
+
+Реализация
+--------------------
+
+**Аппаратная часть:**
+
+* `Джойстик-слайдер QIIC
+  <https://shop.robotclass.ru/item/3439>`_
+
+**Зависимости:**
+
+* Библиотека Adafruit's Bus Device: https://github.com/adafruit/Adafruit_CircuitPython_BusDevice
+"""
+
 __version__ = "0.2"
 
 _REGISTER_GET_SENSOR = const(0xBA)

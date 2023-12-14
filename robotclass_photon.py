@@ -1,6 +1,33 @@
-import struct
+# SPDX-FileCopyrightText: 2023 Oleg Evsegneev for RobotClass
+#
+# SPDX-License-Identifier: MIT
+
+# RobotClass Photon display CircuitPython Driver
+"""
+`robotclass_photon`
+====================================================
+
+Драйвер дисплея Фотон от RobotClass
+
+Исходный код
+https://github.com/robotclass/Circuitpython
+
+Реализация
+--------------------
+
+**Аппаратная часть:**
+
+* `Дисплей Фотон
+  <https://shop.robotclass.ru/item/3441>`_
+
+**Зависимости:**
+
+* Библиотека Adafruit's Bus Device: https://github.com/adafruit/Adafruit_CircuitPython_BusDevice
+"""
 
 __version__ = "0.1"
+
+import struct
 
 CMD_RESET = const(0xF0)
 
