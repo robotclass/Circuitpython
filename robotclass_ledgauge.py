@@ -97,7 +97,7 @@ class RobotClass_LedGauge:
         self._write_register_buf(CMD_SET_COLOR, [r, g, b])
 
     def setBrightness(self, brightness: int):
-        if value < 0 or value > 31:
+        if brightness < 0 or brightness > 31:
             raise "Bad brightness value"
         self._write_register(CMD_SET_BRIGHTNESS, brightness)
 
