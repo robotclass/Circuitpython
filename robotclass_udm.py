@@ -4,7 +4,7 @@
 
 # RobotClass Ultrasonic ranger CircuitPython Driver
 """
-`robotclass_usonic`
+`robotclass_udm`
 ====================================================
 
 Драйвер ультразвукового дальномер УДМ40 от RobotClass
@@ -14,7 +14,7 @@ https://github.com/robotclass/Circuitpython
 
 **Пример**
 i2c = board.I2C()
-sonic = RobotClass_USonic(i2c)
+sonic = RobotClass_UDM(i2c)
 
 while True:
     data = sonic.getDistance()
@@ -26,7 +26,7 @@ while True:
 
 **Аппаратная часть:**
 
-* `Ультразвуковой дальномер УДМ40
+* `Ультразвуковой дальномер УДМ
   <https://shop.robotclass.ru/item/3851>`_
 
 **Зависимости:**
@@ -42,7 +42,7 @@ _REGISTER_GET_SENSOR = const(0xB0)
 _REGISTER_GET_VERSION = const(0xB1)
 _REGISTER_SET_FILTER = const(0xC0)
 
-class RobotClass_USonic:
+class RobotClass_UDM:
     i2c = None
 
     def __init__(self, i2c: I2C, address: int = 0x34) -> None:
@@ -61,8 +61,11 @@ class RobotClass_USonic:
         v = data[0]
         return  v
 
-    def setFilter(self, state: int):
-        self._write_register_byte(_REGISTER_SET_FILTER, state)
+    def filterSet(self):
+        self._write_register_byte(_REGISTER_SET_FILTER, 1)
+
+    def filterUnset(self, state: int):
+        self._write_register_byte(_REGISTER_SET_FILTER, 0)
 
     def _read_register(self, register: int, length: int) -> bytearray:
         """Low level register reading over I2C, returns a list of values"""
