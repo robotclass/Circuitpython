@@ -27,6 +27,8 @@ https://github.com/robotclass/Circuitpython
 
 __version__ = "0.1"
 
+import time
+
 _REGISTER_GET_STATE = const(0xA0)
 _REGISTER_SET_LED = const(0xB0)
 
