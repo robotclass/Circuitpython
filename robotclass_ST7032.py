@@ -1,8 +1,8 @@
-# SPDX-FileCopyrightText: 2024 Oleg Evsegneev for RobotClass
+# SPDX-FileCopyrightText: 2025 Олег Евсегнеев для RobotClass
 #
 # SPDX-License-Identifier: MIT
 
-# RobotClass LED gauge Omicron-16 CircuitPython Driver
+# Драйвер для модуля дисплея 1602 ST7032 с I2C интерфейсом, RobotClass
 """
 `robotclass_ST7032`
 ====================================================
@@ -21,7 +21,7 @@ from robotclass_ST7032 import RobotClass_ST7032
 i2c = board.I2C()
 device = RobotClass_ST7032(i2c)
 
-device.setContrast(35)
+device.setContrast(40)
 device.clear()
 device.write("Hello World!")
 device.setCursor(0,1)
@@ -33,14 +33,14 @@ device.write("Goodbye")
 **Аппаратная часть:**
 
 * `FSTN дисплей 1602 ST7032
-  <https://shop.robotclass.ru/item/3476>`_
+  <https://shop.robotclass.ru/item/3982>`_
 
 **Зависимости:**
 
 * Библиотека Adafruit's Bus Device: https://github.com/adafruit/Adafruit_CircuitPython_BusDevice
 """
 
-__version__ = "0.1"
+__version__ = "1.0"
 
 import time
 
@@ -56,11 +56,11 @@ LCD_FUNCTIONSET         = const(0x20)
 LCD_SETCGRAMADDR        = const(0x40)
 LCD_SETDDRAMADDR        = const(0x80)
 
-LCD_EX_SETBIASOSC       = const(0x10)        # Bias selection / Internal OSC frequency adjust
+LCD_EX_SETBIASOSC       = const(0x10)        # Настройка делителя и частоты 
 LCD_EX_SETICONRAMADDR   = const(0x40)        # Set ICON RAM address
-LCD_EX_POWICONCONTRASTH = const(0x50)        # Power / ICON control / Contrast set(high byte)
+LCD_EX_POWICONCONTRASTH = const(0x50)        # Питание / ICON control / Контраст (старший байт)
 LCD_EX_FOLLOWERCONTROL  = const(0x60)        # Follower control
-LCD_EX_CONTRASTSETL     = const(0x70)        # Contrast set(low byte)
+LCD_EX_CONTRASTSETL     = const(0x70)        # Контраст (младший байт)
 
 # flags for display entry mode
 LCD_ENTRYRIGHT          = const(0x00)
@@ -92,8 +92,8 @@ LCD_5x8DOTS             = const(0x00)
 LCD_EX_INSTRUCTION      = const(0x01)        # IS: instruction table select
 
 # flags for Bias selection
-LCD_BIAS_1_4            = const(0x08)        # bias will be 1/4
-LCD_BIAS_1_5            = const(0x00)        # bias will be 1/5
+LCD_BIAS_1_4            = const(0x08)        # делитель 1/4
+LCD_BIAS_1_5            = const(0x00)        # делитель 1/5
 
 # flags Power / ICON control / Contrast set(high byte)
 LCD_ICON_ON             = const(0x08)        # ICON display on
@@ -133,16 +133,12 @@ class RobotClass_ST7032:
     _currline = 0
 
 
-    def __del__(self):
-        # self.smbus.close()
-        pass
+    def __init__(self, i2c):
+        import adafruit_bus_device.i2c_device as i2c_device
+        self._i2c = i2c_device.I2CDevice(i2c, ST7032_I2C_DEFAULT_ADDR)
+        self.init_hw()
 
-    def __init__(self, i2c: I2C, address: int = ST7032_I2C_DEFAULT_ADDR) -> None:
-        from adafruit_bus_device import (  # pylint: disable=import-outside-toplevel
-            i2c_device,
-        )
-        self._i2c = i2c_device.I2CDevice(i2c, address)
-
+    def init_hw(self):
         self._displayfunction  = LCD_8BITMODE | LCD_1LINE | LCD_5x8DOTS
 
         if (self.lines > 1) :
@@ -150,11 +146,12 @@ class RobotClass_ST7032:
 
         self._numlines = self.lines
         self._currline = 0
+
         # for some 1 line displays you can select a 10 pixel high font
         if ((self.dotsize != 0) and (self.lines == 1)) :
             self._displayfunction |= LCD_5x10DOTS
 
-        # finally, set # lines, font size, etc.
+        # настройка отображения
         self.normalFunctionSet()
 
         self.extendFunctionSet()
@@ -163,17 +160,15 @@ class RobotClass_ST7032:
         time.sleep(0.2)                                 # Wait time >200ms (for power stable)
         self.normalFunctionSet()
 
-        # turn the display on with no cursor or blinking default
-        #  display()
+        # включение дисплея без курсора
         self._displaycontrol  = 0x00 #LCD_DISPLAYON | LCD_CURSOROFF | LCD_BLINKOFF
         self.setDisplayControl(LCD_DISPLAYON | LCD_CURSOROFF | LCD_BLINKOFF)
 
-        # self.clear it off
+        # очистка дисплея
         self.clear()
 
-        # Initialize to default text direction (for romance languages)
-        #  self.command(LCD_ENTRYMODESET | self._displaymode)
-        self._displaymode      = 0x00#LCD_ENTRYLEFT | LCD_ENTRYSHIFTDECREMENT
+        # настройка направления текста
+        self._displaymode      = 0x00 #LCD_ENTRYLEFT | LCD_ENTRYSHIFTDECREMENT
         self.setEntryMode(LCD_ENTRYLEFT | LCD_ENTRYSHIFTDECREMENT)
 
     def setDisplayControl(self,setBit) :
@@ -209,21 +204,26 @@ class RobotClass_ST7032:
         self.command(LCD_EX_POWICONCONTRASTH | LCD_ICON_ON | LCD_BOOST_ON | ((cont >> 4) & 0x03)) # Power, ICON, Contrast control
         self.normalFunctionSet()
 
+    """
     def setIcon(self,addr, bit) :
         self.extendFunctionSet()
         self.command(LCD_EX_SETICONRAMADDR | (addr & 0x0f))                   # ICON address
         write(bit)
         self.normalFunctionSet()
+    """
 
-    # /********** high level commands, for the user! */
+    # -------- Методы высокого уровня --------
+    # очистка дисплея, перевод курсора в нулевую позицию
     def clear(self):
         self.command(LCD_CLEARDISPLAY)  # self.clear display, set cursor position to zero
         time.sleep(0.002)  # this command takes a long time!
 
+    # перевод курсора в нулевую позицию
     def home(self):
         self.command(LCD_RETURNHOME)  # set cursor position to zero
         time.sleep(0.002)  # this command takes a long time!
 
+    # перевод курсора в позицию col, row
     def setCursor(self,col,row):
         row_offsets = [ 0x00, 0x40, 0x14, 0x54 ]
 
@@ -234,7 +234,7 @@ class RobotClass_ST7032:
         self.command(LCD_SETDDRAMADDR | (col + row_offsets[row]))
 
 
-    # Turn the display on/off (quickly)
+    # включение/выключение дисплея
     def noDisplay(self) :
         self.resetDisplayControl(LCD_DISPLAYON)
 
@@ -242,7 +242,7 @@ class RobotClass_ST7032:
         self.setDisplayControl(LCD_DISPLAYON)
 
 
-    # Turns the underline cursor on/off
+    # включение/выключение подчерка под курсором
     def noCursor(self) :
         self.resetDisplayControl(LCD_CURSORON)
 
@@ -250,7 +250,7 @@ class RobotClass_ST7032:
         self.setDisplayControl(LCD_CURSORON)
 
 
-    # Turn on and off the blinking cursor
+    # включение/выключение мигающего курсора
     def noBlink(self) :
         self.resetDisplayControl(LCD_BLINKON)
 
@@ -258,46 +258,43 @@ class RobotClass_ST7032:
         self.setDisplayControl(LCD_BLINKON)
 
 
-    # These commands scroll the display without changing the RAM
+    # перемотка дисплея без изменения памяти
     def scrollDisplayLeft(self) :
         self.command(LCD_CURSORSHIFT | LCD_DISPLAYMOVE | LCD_MOVELEFT)
-
 
     def scrollDisplayRight(self) :
         self.command(LCD_CURSORSHIFT | LCD_DISPLAYMOVE | LCD_MOVERIGHT)
 
 
-    # This is for text that flows Left to Right
+    # направление текста слева направо
     def leftToRight(self) :
         self.setEntryMode(LCD_ENTRYLEFT)
 
-
-    # This is for text that flows Right to Left
+    # направление текста справа налево
     def rightToLeft(self) :
         self.resetEntryMode(LCD_ENTRYLEFT)
 
 
-    # This will 'right justify' text from the cursor
+    # выравнивание текста справа
     def autoscroll(self) :
         self.setEntryMode(LCD_ENTRYSHIFTINCREMENT)
 
 
-    # This will 'left justify' text from the cursor
+    # выравнивание текста слева
     def noAutoscroll(self) :
         self.resetEntryMode(LCD_ENTRYSHIFTINCREMENT)
 
 
-    # Allows us to fill the first 8 CGRAM locations
-    # with custom characters
+    # Перезапись первых 8 CGRAM (символов)
     def createChar(self,location, charmap) :
-        location &= 0x7 # we only have 8 locations 0-7
+        location &= 0x7
         self.command(LCD_SETCGRAMADDR | (location << 3))
         for i in range(0,7):
             self.writeData(charmap[i])
 
 
 
-    # /*********** mid level commands, for sending data/cmds */
+    # -------- Методы низкого уровня --------
 
     def command(self, value) :
         with self._i2c:
