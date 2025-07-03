@@ -36,12 +36,16 @@ CMD_EVENT_PUSH = const(0xA1)
 CMD_EVENT_POP = const(0xA2)
 CMD_PAGE = const(0xA3)
 CMD_VERSION = const(0xA4)
+
 CMD_ERR_PAGE_N = const(0xB0)
 CMD_ERR_ITEM_N = const(0xB1)
+
 CMD_SET_INT = const(0xC0)
 CMD_SET_FLOAT = const(0xC1)
 CMD_SET_STR = const(0xC2)
 CMD_SET_PAGE = const(0xC3)
+CMD_SET_BL = const(0xC4)
+
 CMD_GET_VERSION = const(0xD0)
 CMD_GET_PAGE = const(0xD1)
 
@@ -71,6 +75,10 @@ class RobotClass_Photon:
     def setPage(self, idx: int):
         with self._i2c as i2c:
             i2c.write(bytes([CMD_SET_PAGE, idx]))
+
+    def setBacklight(self, value: int):
+        with self._i2c as i2c:
+            i2c.write(bytes([CMD_SET_BL, value]))
 
     def getVersion(self) -> int:
         with self._i2c as i2c:
